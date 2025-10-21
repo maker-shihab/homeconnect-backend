@@ -1,13 +1,30 @@
-import { Router } from 'express';
-import { authMiddleware } from '../../shared/middleware/authMiddleware';
-import { validate } from '../../shared/middleware/validationMiddleware';
+import express from 'express';
+import { validateRequest } from '../../shared/middleware/validateRequest';
 import { authController } from './auth.controller';
-import { loginSchema, registerSchema } from './auth.validation';
+import { verifyEmailSchema } from './auth.validation';
 
-const router = Router();
+const router = express.Router();
 
-router.post('/register', validate(registerSchema), authController.register);
-router.post('/login', validate(loginSchema), authController.login);
-router.get('/me', authMiddleware, authController.getMe);
+router.post('/register', authController.register);
+router.post('/login', authController.login);
+router.post('/refresh-token', authController.refreshToken);
+router.post('/logout', authController.logout);
+
+// Add email verification route
+router.post(
+  '/verify-email',
+  validateRequest(verifyEmailSchema),
+  authController.verifyEmail
+);
+
+router.post('/forgot-password', authController.forgotPassword);
+router.post('/reset-password', authController.resetPassword);
+router.post('/change-password', authController.changePassword);
+
+// Protected routes
+router.use(authController.protect);
+
+router.get('/profile', authController.getProfile);
+router.put('/profile', authController.updateProfile);
 
 export const authRoutes = router;

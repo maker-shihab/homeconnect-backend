@@ -4,14 +4,15 @@ import dotenv from 'dotenv';
 import express from 'express';
 import helmet from 'helmet';
 import morgan from 'morgan';
-
-// Import error middleware
 import { globalRoute } from './routes/index';
 import { errorHandler } from './shared/middleware/errorMiddleware';
 
 dotenv.config();
 
 const app = express();
+app.use(express.json({ limit: '10mb' })); // This is crucial!
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
 
 // Middleware
 app.use(helmet());

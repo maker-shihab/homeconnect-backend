@@ -5,7 +5,7 @@ import app from './app';
 dotenv.config();
 
 const PORT = process.env.PORT || 5000;
-const MONGO_URI = process.env.MONGO_URI as string;
+const MONGO_URI = process.env.MONGO_URI || 'mongodb+srv://shihab_db:shihab_db%4099@homeconnectcluster.2utr95m.mongodb.net/?retryWrites=true&w=majority&appName=homeconnectcluster';
 
 if (!MONGO_URI) {
   throw new Error('MONGO_URI is not defined in environment variables');
