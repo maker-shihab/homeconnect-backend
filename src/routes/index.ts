@@ -27,7 +27,7 @@ router.use('/dashboard', dashboardRoutes);
 router.use('*', (req, res) => {
   res.status(404).json({
     success: false,
-    error: `API route ${req.originalUrl} not found`,
+    error: `API route ${req.originalUrl} not found 🚫`,
   });
 });
 
