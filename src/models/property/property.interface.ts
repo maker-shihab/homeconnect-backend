@@ -253,7 +253,7 @@ export interface ISaleFilters extends IPropertyFiltersBase {
 export type IPropertyFilters = IRentalFilters | ISaleFilters;
 
 // Response Interfaces
-interface IPropertyResponseBase {
+export interface IPropertyResponseBase {
   id: string;
   title: string;
   description: string;

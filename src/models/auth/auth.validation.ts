@@ -58,7 +58,6 @@ export const verifyEmailSchema = z.object({
 
 export const updateProfileSchema = z.object({
   name: nameSchema.optional(),
-  phone: phoneSchema,
   avatar: z.string().url('Invalid avatar URL').optional(),
 });
 

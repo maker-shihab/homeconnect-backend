@@ -20,7 +20,6 @@ export const authMiddleware = async (req: Request, res: Response, next: NextFunc
   try {
     // 1. Get token from header
     const authHeader = req.headers.authorization;
-    console.log(authHeader);
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       throw new AppError('Access token required', 401);
     }

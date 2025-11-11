@@ -1,79 +1,106 @@
-// modules/dashboard/dashboard.controller.ts
+// dashborad.controller.ts
+
 import { Request, Response } from 'express';
 import { validateRequest } from '../../shared/middleware/validateRequest';
-import { AppError } from '../../shared/utils/AppError';
 import { catchAsync } from '../../shared/utils/catchAsync';
-import { dashboardService } from './dashboard.services';
+import { dashboardService, TUserRole } from './dashboard.services';
 import {
-  dashboardDataSchema,
-  earningsDataSchema,
-  getDashboardStatsSchema,
-  getEarningsReportSchema
+  ActivityFiltersInput,
+  ActivityFiltersSchema,
+  CreateMaintenanceRequestSchema,
+  MaintenanceFiltersInput,
+  MaintenanceFiltersSchema,
+  MaintenanceIdSchema,
+  UpdateMaintenanceRequestSchema,
 } from './dashboard.validation';
 
 export class DashboardController {
-  getDashboardData = [
-    validateRequest(getDashboardStatsSchema),
+  getDashboardOverview = catchAsync(async (req: Request, res: Response) => {
+    const userId = req.user!.userId;
+    const userRole = req.user!.role as TUserRole;
+
+    const overviewData = await dashboardService.getDashboardOverview(
+      userId,
+      userRole,
+    );
+
+    res.status(200).json({
+      status: 'success',
+      data: overviewData,
+    });
+  });
+
+  // -----------------
+  // MAINTENANCE
+  // -----------------
+
+  createMaintenanceRequest = [
+    validateRequest(CreateMaintenanceRequestSchema, 'body'),
     catchAsync(async (req: Request, res: Response) => {
-      const userId = req.user?.id;
+      const tenantId = req.user!.userId;
+      const request = await dashboardService.createMaintenanceRequest(
+        tenantId,
+        req.body,
+      );
 
-      if (!userId) {
-        throw new AppError('User not authenticated', 401);
-      }
-
-      const dashboardData = await dashboardService.getDashboardData(userId, req.query);
-
-      // Validate response data
-      const validatedData = dashboardDataSchema.parse(dashboardData);
-
-      res.status(200).json({
+      res.status(201).json({
         status: 'success',
-        data: validatedData
+        message: 'Maintenance request submitted successfully',
+        data: request,
       });
-    })
+    }),
   ];
 
-  getEarningsReport = [
-    validateRequest(getEarningsReportSchema),
-    catchAsync(async (req: Request, res: Response) => {
-      const userId = req.user?.id;
-      const year = parseInt(req.params.year) || new Date().getFullYear();
-
-      if (!userId) {
-        throw new AppError('User not authenticated', 401);
-      }
-
-      const earningsData = await dashboardService.getLandlordEarnings(userId, year);
-
-      // Validate response data
-      const validatedData = earningsDataSchema.parse(earningsData);
+  getMaintenanceRequests = [
+    validateRequest(MaintenanceFiltersSchema, 'query'),
+    catchAsync(async (req: Request<any, any, any, MaintenanceFiltersInput>, res: Response) => {
+      const filters = req.query as MaintenanceFiltersInput;
+      const result = await dashboardService.getMaintenanceRequests(filters);
 
       res.status(200).json({
         status: 'success',
-        data: validatedData
+        data: result,
       });
-    })
+    }),
   ];
 
-  getStats = [
-    validateRequest(getDashboardStatsSchema),
+  updateMaintenanceRequest = [
+    validateRequest(MaintenanceIdSchema, 'params'),
+    validateRequest(UpdateMaintenanceRequestSchema, 'body'),
     catchAsync(async (req: Request, res: Response) => {
-      const userId = req.user?.id;
+      const { id } = req.params;
+      const { userId, role } = req.user!;
 
-      if (!userId) {
-        throw new AppError('User not authenticated', 401);
-      }
-
-      const dashboardData = await dashboardService.getDashboardData(userId, req.query);
+      const updatedRequest = await dashboardService.updateMaintenanceRequest(
+        id,
+        req.body,
+        userId,
+        role as TUserRole,
+      );
 
       res.status(200).json({
         status: 'success',
-        data: {
-          stats: dashboardData.stats,
-          quickStats: dashboardData.quickStats
-        }
+        message: 'Maintenance request updated',
+        data: updatedRequest,
       });
-    })
+    }),
+  ];
+
+  // -----------------
+  // ACTIVITY
+  // -----------------
+
+  getActivities = [
+    validateRequest(ActivityFiltersSchema, 'query'),
+    catchAsync(async (req: Request<any, any, any, ActivityFiltersInput>, res: Response) => {
+      const filters = req.query as ActivityFiltersInput;
+      const result = await dashboardService.getActivities(filters);
+
+      res.status(200).json({
+        status: 'success',
+        data: result,
+      });
+    }),
   ];
 }
 

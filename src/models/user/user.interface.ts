@@ -51,7 +51,6 @@ export interface IUserCreate {
 
 export interface IUserUpdate {
   name?: string;
-  phone?: string;
   avatar?: string;
 }
 

@@ -44,7 +44,14 @@ export class AuthService {
     try {
       const existingUser = await User.findOne({ email: userData.email });
       if (existingUser) {
-        throw new AppError('User already exists with this email', 400);
+        throw new AppError('User already exists with this email', 409);
+      }
+
+      if (userData.phone) {
+        const phoneRegex = /^\+?[1-9]\d{1,14}$/;
+        if (!phoneRegex.test(userData.phone)) {
+          throw new AppError('Invalid phone number format', 400);
+        }
       }
 
       const refreshToken = this.generateRefreshToken({ userId: '', email: userData.email, role: userData.role });
@@ -94,8 +101,6 @@ export class AuthService {
       if (error instanceof AppError) {
         throw error;
       }
-
-      console.error('Registration error:', error);
       throw new AppError('Registration failed', 500);
     }
   }

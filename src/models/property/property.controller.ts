@@ -1,21 +1,21 @@
-import { Request, Response } from 'express';
+import { NextFunction, Request, Response } from 'express';
 import { validateRequest } from '../../shared/middleware/validateRequest';
+import { AppError } from '../../shared/utils/AppError';
 import { catchAsync } from '../../shared/utils/catchAsync';
+import sendResponse from '../../shared/utils/sendResponse';
 import { ICreatePropertyRequest } from './property.interface';
 import { propertyService } from './property.service';
 import {
   CreatePropertySchema,
   PropertyIdSchema,
-  SimplePropertyFiltersSchema,
   UpdatePropertySchema,
-  type PropertyFiltersInput,
-  type UpdatePropertyInput
+  type UpdatePropertyInput,
 } from './property.validation';
 
 export class PropertyController {
   createProperty = [
     validateRequest(CreatePropertySchema, 'body'),
-    catchAsync(async (req: Request, res: Response) => {
+    catchAsync(async (req: Request, res: Response, next: NextFunction) => {
       const files = req.files as Express.Multer.File[];
       const property = await propertyService.createProperty(
         req.user!.userId,
@@ -23,127 +23,182 @@ export class PropertyController {
         files
       );
 
-      res.status(201).json({
-        status: 'success',
-        message: 'Property created successfully',
-        data: { property }
+      sendResponse(res, 201, 'Property created successfully', property, {
+        page: 1,
+        limit: 1,
+        total: 1,
+        totalPages: 1,
+        hasNext: false,
+        hasPrev: false,
       });
-    })
+    }),
   ];
 
   getProperties = [
-    validateRequest(SimplePropertyFiltersSchema, 'query'),
-    catchAsync(async (req: Request, res: Response) => {
-      const result = await propertyService.getProperties(req.query as unknown as PropertyFiltersInput);
+    catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+      const result = await propertyService.getProperties(req.query);
 
-      res.status(200).json({
-        status: 'success',
-        data: result
-      });
-    })
+      sendResponse(
+        res,
+        200,
+        'Properties fetched successfully',
+        result.properties,
+        {
+          total: result.total,
+          page: result.page,
+          totalPages: result.totalPages,
+          hasNext: result.hasNext,
+          hasPrev: result.hasPrev,
+        }
+      );
+    }),
   ];
 
   getProperty = [
-    // validateRequest(PropertyIdSchema, 'params'),
-    catchAsync(async (req: Request, res: Response) => {
+    validateRequest(PropertyIdSchema, 'params'),
+    catchAsync(async (req: Request, res: Response, next: NextFunction) => {
       const property = await propertyService.getPropertyById(req.params.id);
 
       if (!property) {
-        return res.status(404).json({
-          status: 'error',
-          message: 'Property not found'
-        });
+        return next(new AppError('Property not found', 404));
       }
 
-      res.status(200).json({
-        status: 'success',
-        data: { property }
+      sendResponse(res, 200, 'Property fetched successfully', property, {
+        page: 1,
+        limit: 1,
+        total: 1,
+        totalPages: 1,
+        hasNext: false,
+        hasPrev: false,
       });
-    })
+    }),
   ];
 
   updateProperty = [
     validateRequest(PropertyIdSchema, 'params'),
     validateRequest(UpdatePropertySchema, 'body'),
-    catchAsync(async (req: Request, res: Response) => {
+    catchAsync(async (req: Request, res: Response, next: NextFunction) => {
       const property = await propertyService.updateProperty(
         req.params.id,
         req.user!.userId,
         req.body as UpdatePropertyInput
       );
 
-      res.status(200).json({
-        status: 'success',
-        message: 'Property updated successfully',
-        data: { property }
+      sendResponse(res, 200, 'Property updated successfully', property, {
+        page: 1,
+        limit: 1,
+        total: 1,
+        totalPages: 1,
+        hasNext: false,
+        hasPrev: false,
       });
-    })
+    }),
   ];
 
   deleteProperty = [
     validateRequest(PropertyIdSchema, 'params'),
-    catchAsync(async (req: Request, res: Response) => {
+    catchAsync(async (req: Request, res: Response, next: NextFunction) => {
       await propertyService.deleteProperty(req.params.id, req.user!.userId);
-
-      res.status(200).json({
-        status: 'success',
-        message: 'Property deleted successfully'
-      });
-    })
+      sendResponse(res, 200, 'Property deleted successfully', null);
+    }),
   ];
 
   likeProperty = [
     validateRequest(PropertyIdSchema, 'params'),
-    catchAsync(async (req: Request, res: Response) => {
-      const result = await propertyService.likeProperty(req.params.id, req.user!.userId);
-
-      res.status(200).json({
-        status: 'success',
-        message: result.liked ? 'Property liked' : 'Property unliked',
-        data: result
-      });
-    })
+    catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+      const result = await propertyService.likeProperty(
+        req.params.id,
+        req.user!.userId
+      );
+      const message = result.liked ? 'Property liked' : 'Property unliked';
+      sendResponse(res, 200, message, result);
+    }),
   ];
 
-  getFeaturedProperties = catchAsync(async (req: Request, res: Response) => {
-    const limit = req.query.limit ? parseInt(req.query.limit as string) : 6;
-    const properties = await propertyService.getFeaturedProperties(limit);
+  getFeaturedProperties = catchAsync(
+    async (req: Request, res: Response, next: NextFunction) => {
+      const limit = req.query.limit ? parseInt(req.query.limit as string) : 6;
+      const properties = await propertyService.getFeaturedProperties(limit);
 
-    res.status(200).json({
-      status: 'success',
-      data: { properties }
-    });
-  });
+      sendResponse(
+        res,
+        200,
+        'Featured properties fetched successfully',
+        properties,
+        {
+          page: 1,
+          limit: properties.length,
+          total: properties.length,
+          totalPages: 1,
+          hasNext: false,
+          hasPrev: false,
+        }
+      );
+    }
+  );
 
-  getPropertiesByCity = catchAsync(async (req: Request, res: Response) => {
-    const properties = await propertyService.getPropertiesByCity(req.params.city);
+  getPropertiesByCity = catchAsync(
+    async (req: Request, res: Response, next: NextFunction) => {
+      const properties = await propertyService.getPropertiesByCity(
+        req.params.city
+      );
+      sendResponse(
+        res,
+        200,
+        `Properties in ${req.params.city} fetched successfully`,
+        properties,
+        {
+          page: 1,
+          limit: properties.length,
+          total: properties.length,
+          totalPages: 1,
+          hasNext: false,
+          hasPrev: false,
+        }
+      );
+    }
+  );
 
-    res.status(200).json({
-      status: 'success',
-      data: { properties }
-    });
-  });
+  getUserProperties = catchAsync(
+    async (req: Request, res: Response, next: NextFunction) => {
+      const page = parseInt(req.query.page as string) || 1;
+      const limit = parseInt(req.query.limit as string) || 10;
 
-  getUserProperties = catchAsync(async (req: Request, res: Response) => {
-    const page = parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string) || 10;
+      const result = await propertyService.getUserProperties(
+        req.user!.userId,
+        page,
+        limit
+      );
 
-    const result = await propertyService.getUserProperties(req.user!.userId, page, limit);
+      sendResponse(
+        res,
+        200,
+        'User properties fetched successfully',
+        result.properties,
+        {
+          total: result.total,
+          page: result.page,
+          totalPages: result.totalPages,
+          hasNext: result.hasNext,
+          hasPrev: result.hasPrev,
+        }
+      );
+    }
+  );
 
-    res.status(200).json({
-      status: 'success',
-      data: result
-    });
-  });
-
-  getAvailableFilters = catchAsync(async (req: Request, res: Response) => {
-    const filters = await propertyService.getAvailableFilters();
-
-    res.status(200).json({
-      status: 'success',
-      data: filters
-    });
-  });
+  getAvailableFilters = catchAsync(
+    async (req: Request, res: Response, next: NextFunction) => {
+      const filters = await propertyService.getAvailableFilters();
+      sendResponse(res, 200, 'Filters fetched successfully', filters, {
+        page: 1,
+        limit: 1,
+        total: 1,
+        totalPages: 1,
+        hasNext: false,
+        hasPrev: false,
+      });
+    }
+  );
 }
 
 export const propertyController = new PropertyController();

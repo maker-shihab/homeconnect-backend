@@ -25,9 +25,6 @@ export const userUpdateSchema = z.object({
     .min(2, 'Name must be at least 2 characters')
     .max(50, 'Name must be less than 50 characters')
     .optional(),
-  phone: z.string()
-    .regex(/^\+?[\d\s\-()]+$/, 'Invalid phone number format')
-    .optional(),
   avatar: z.string()
     .url('Invalid avatar URL')
     .optional(),

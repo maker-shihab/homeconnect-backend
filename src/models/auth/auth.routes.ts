@@ -25,6 +25,6 @@ router.post('/change-password', authController.changePassword);
 router.use(authController.protect);
 
 router.get('/profile', authController.getProfile);
-router.put('/profile', authController.updateProfile);
+router.patch('/profile', authController.updateProfile);
 
 export const authRoutes = router;

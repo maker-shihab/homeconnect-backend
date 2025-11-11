@@ -52,6 +52,5 @@ export interface IVerifyEmailRequest {
 
 export interface IUpdateProfileRequest {
   name?: string;
-  phone?: string;
   avatar?: string;
 }

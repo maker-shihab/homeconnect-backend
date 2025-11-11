@@ -1,6 +1,5 @@
-// shared/middleware/validateRequest.ts
 import { NextFunction, Request, Response } from 'express';
-import { ZodError, ZodType } from 'zod'; // Change ZodSchema to ZodType
+import { ZodError, ZodType } from 'zod';
 import { AppError } from '../utils/AppError';
 
 export const validateRequest = (schema: ZodType, source: 'body' | 'query' | 'params' = 'body') => {
@@ -31,7 +30,6 @@ export const validateRequest = (schema: ZodType, source: 'body' | 'query' | 'par
           dataToValidate = req.body;
       }
 
-      // Check if body is undefined or empty
       if (source === 'body' && (!dataToValidate || Object.keys(dataToValidate).length === 0)) {
         return next(new AppError('Request body is required', 400));
       }
@@ -46,10 +44,8 @@ export const validateRequest = (schema: ZodType, source: 'body' | 'query' | 'par
       } else {
         req.params = validatedData as any;
       }
-      console.log('✅ Validation successful');
       next();
     } catch (error) {
-      console.log('❌ Validation error:', error);
       if (error instanceof ZodError) {
         const errorMessages = error.issues.map(issue => {
           const path = issue.path.join('.');
