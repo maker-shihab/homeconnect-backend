@@ -1,8 +1,8 @@
-// modules/auth/auth.controller.ts
-import { Request, Response } from 'express';
+import { NextFunction, Request, Response } from 'express';
 import { validateRequest } from '../../shared/middleware/validateRequest';
 import { AppError } from '../../shared/utils/AppError';
 import { catchAsync } from '../../shared/utils/catchAsync';
+import sendResponse from '../../shared/utils/sendResponse';
 import { registerUserSchema } from '../user/user.validation';
 import { authService } from './auth.services';
 import {
@@ -16,160 +16,104 @@ import {
 } from './auth.validation';
 
 export class AuthController {
+
   register = [
     validateRequest(registerUserSchema, 'body'),
-    catchAsync(async (req: Request, res: Response) => {
-      try {
-        const result = await authService.register(req.body);
-
-        res.status(201).json({
-          status: 'success',
-          message: 'User registered successfully. Please check your email for verification.',
-          data: result
-        });
-      } catch (error) {
-        if (error instanceof AppError) {
-          throw error;
-        }
-        throw new AppError('Failed to register user', 500);
-      }
-    })
+    catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+      const result = await authService.register(req.body);
+      sendResponse(
+        res,
+        201,
+        'User registered successfully. Please check your email for verification.',
+        result
+      );
+    }),
   ];
 
   login = [
     validateRequest(loginSchema, 'body'),
-    catchAsync(async (req: Request, res: Response) => {
+    catchAsync(async (req: Request, res: Response, next: NextFunction) => {
       const result = await authService.login(req.body);
-
-      res.status(200).json({
-        status: 'success',
-        message: 'Login successful',
-        data: result
-      });
-    })
+      sendResponse(res, 200, 'Login successful', result);
+    }),
   ];
 
   refreshToken = [
     validateRequest(refreshTokenSchema),
-    catchAsync(async (req: Request, res: Response) => {
+    catchAsync(async (req: Request, res: Response, next: NextFunction) => {
       const authResponse = await authService.refreshToken(req.body.refreshToken);
-
-      res.status(200).json({
-        status: 'success',
-        data: authResponse
-      });
-    })
+      sendResponse(res, 200, 'Token refreshed successfully', authResponse);
+    }),
   ];
 
   forgotPassword = [
     validateRequest(forgotPasswordSchema),
-    catchAsync(async (req: Request, res: Response) => {
+    catchAsync(async (req: Request, res: Response, next: NextFunction) => {
       const result = await authService.forgotPassword(req.body);
-
-      res.status(200).json({
-        status: 'success',
-        data: result
-      });
-    })
+      sendResponse(res, 200, 'Password reset email sent successfully', result);
+    }),
   ];
 
   resetPassword = [
     validateRequest(resetPasswordSchema),
-    catchAsync(async (req: Request, res: Response) => {
+    catchAsync(async (req: Request, res: Response, next: NextFunction) => {
       const result = await authService.resetPassword(req.body);
-
-      res.status(200).json({
-        status: 'success',
-        data: result
-      });
-    })
+      sendResponse(res, 200, 'Password reset successfully', result);
+    }),
   ];
 
   changePassword = [
     validateRequest(changePasswordSchema),
-    catchAsync(async (req: Request, res: Response) => {
+    catchAsync(async (req: Request, res: Response, next: NextFunction) => {
       const userId = req.user?.userId;
       if (!userId) {
-        throw new AppError('User not authenticated', 401);
+        return next(new AppError('User not authenticated', 401));
       }
-
       const result = await authService.changePassword(userId, req.body);
-
-      res.status(200).json({
-        status: 'success',
-        data: result
-      });
-    })
+      sendResponse(res, 200, 'Password changed successfully', result);
+    }),
   ];
 
   verifyEmail = [
     validateRequest(verifyEmailSchema),
-    catchAsync(async (req: Request, res: Response) => {
+    catchAsync(async (req: Request, res: Response, next: NextFunction) => {
       const result = await authService.verifyEmail(req.body);
-
-      res.status(200).json({
-        status: 'success',
-        message: result.message,
-        data: null
-      });
-    })
+      sendResponse(res, 200, result.message, null);
+    }),
   ];
 
-  getProfile = catchAsync(async (req: Request, res: Response) => {
-    res.status(200).json({
-      status: 'success',
-      data: { user: (req as any).user }
-    });
+  getProfile = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+    // 'protect' middleware already set req.user
+    sendResponse(res, 200, 'Profile retrieved successfully', req.user);
   });
 
   updateProfile = [
     validateRequest(updateProfileSchema),
-    catchAsync(async (req: Request, res: Response) => {
+    catchAsync(async (req: Request, res: Response, next: NextFunction) => {
       const userId = req.user?.userId;
       if (!userId) {
-        throw new AppError('User not authenticated', 401);
+        return next(new AppError('User not authenticated', 401));
       }
-
       const user = await authService.updateProfile(userId, req.body);
-
-      res.status(200).json({
-        status: 'success',
-        data: { user }
-      });
-    })
+      sendResponse(res, 200, 'Profile updated successfully', user);
+    }),
   ];
 
-  protect = catchAsync(async (req: Request, res: Response, next: Function) => {
-    // This will be your authentication middleware
-    // You'll need to implement JWT verification here
-    next();
-  });
-
-  logout = catchAsync(async (req: Request, res: Response) => {
+  logout = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
     const userId = req.user?.userId;
     if (!userId) {
-      throw new AppError('User not authenticated', 401);
+      return next(new AppError('User not authenticated', 401));
     }
-
     const result = await authService.logout(userId);
-
-    res.status(200).json({
-      status: 'success',
-      data: result
-    });
+    sendResponse(res, 200, 'Logout successful', result);
   });
 
-  getMe = catchAsync(async (req: Request, res: Response) => {
+  getMe = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
     const userId = req.user?.userId;
     if (!userId) {
-      throw new AppError('User not authenticated', 401);
+      return next(new AppError('User not authenticated', 401));
     }
-    res.status(200).json({
-      status: 'success',
-      data: {
-        user: req.user
-      }
-    });
+    sendResponse(res, 200, 'Profile retrieved successfully', req.user);
   });
 }
 

@@ -18,7 +18,6 @@ declare global {
 
 export const authMiddleware = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    // 1. Get token from header
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       throw new AppError('Access token required', 401);
@@ -26,7 +25,6 @@ export const authMiddleware = async (req: Request, res: Response, next: NextFunc
 
     const token = authHeader.substring(7);
 
-    // 2. Verify token
     const decoded = jwt.verify(token, JWT_CONFIG.access.secret) as any;
 
     const user = await User.findById(decoded.userId).select('-password');
@@ -35,12 +33,10 @@ export const authMiddleware = async (req: Request, res: Response, next: NextFunc
       throw new AppError('User no longer exists', 401);
     }
 
-    // 4. Check if user is active
     if (!user.isActive) {
       throw new AppError('User account is deactivated', 401);
     }
 
-    // 5. Add user to request
     req.user = {
       userId: user._id.toString(),
       email: user.email,
