@@ -14,12 +14,10 @@ if (!MONGO_URI) {
 }
 
 // MongoDB connection options for serverless environments
-const mongooseOptions = {
+const mongooseOptions: mongoose.ConnectOptions = {
   maxPoolSize: 10,
   serverSelectionTimeoutMS: 5000,
   socketTimeoutMS: 45000,
-  bufferCommands: false,
-  bufferMaxEntries: 0,
 };
 
 // MongoDB connection - optimized for serverless
