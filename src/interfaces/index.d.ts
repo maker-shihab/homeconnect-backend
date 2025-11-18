@@ -1,10 +1,2 @@
 /* eslint-disable @typescript-eslint/consistent-type-definitions */
-import { JwtPayload } from 'jsonwebtoken';
-
-declare global {
-  namespace Express {
-    interface Request {
-      user: JwtPayload | null;
-    }
-  }
-}
+// Express Request type extensions are defined in src/shared/types/express.d.ts

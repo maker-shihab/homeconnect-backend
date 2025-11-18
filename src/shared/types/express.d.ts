@@ -1,11 +1,13 @@
-import { IUser } from '../../interfaces/IUser';
+import { ITokenPayload } from "../../models/auth/auth.interface";
 
 declare global {
   namespace Express {
     interface Request {
-      user?: IUser;
+      user?: ITokenPayload & {
+        userId: string;
+      };
     }
   }
 }
 
-export { };
+export {};
